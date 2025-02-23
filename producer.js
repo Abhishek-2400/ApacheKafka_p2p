@@ -1,40 +1,58 @@
+const Kafka = require("node-rdkafka");
 
-import { kafka } from './client.js'
-import readline from 'readline'
+const TOPIC_NAME = "energymeter";
+const SASL_MECHANISM = "SCRAM-SHA-256";
 
-
-const rl = readline.createInterface({  //creating a readline cli interface 
-    input: process.stdin,
-    output: process.stdout,
+const producer = new Kafka.Producer({
+    "metadata.broker.list": "kafka-3891f4e4-scalable-chat-app-redis-nextjs.k.aivencloud.com:22618",
+    "security.protocol": "sasl_ssl",
+    "sasl.mechanism": SASL_MECHANISM,
+    "sasl.username": "avnadmin",
+    "sasl.password": "AVNS_TF99GUGpRTJ5xvcjvCy",
+    "ssl.ca.location": "ca.pem",
+    "dr_cb": true
 });
 
+producer.connect();
 
-const init = async () => {
-    const producer = kafka.producer()
-    await producer.connect()
+const sleep = async (timeInMs) =>
+    await new Promise((resolve) => setTimeout(resolve, timeInMs));
 
-    rl.setPrompt("Enter message>");  //setting promt 
-    rl.prompt();          //asking user to enter prompt
+const produceMessagesOnSecondIntervals = async () => {
+    // produce 100 messages on 1 second intervals
+    let i = 0;
+    while (i < 100) {
+        try {
+            if (!producer.isConnected()) {
+                await sleep(1000);
+                continue;
+            }
 
-    rl.on('line', async (line) => {
-        const [user_name, user_location] = line.split(" ");
-        await producer.send({
-            topic: 'rider-updates',
-            messages: [
-                {
-                    //north -->0 south -->1
-                    partition: user_location.toLowerCase() === "north" ? 0 : 1,
-                    key: 'location-update',
-                    value: JSON.stringify({ name: user_name, location: user_location })
-                }
+            const message = `Hello from Node using SASL ${++i}!`;
+            producer.produce(
+                // Topic to send the message to
+                TOPIC_NAME,
+                // optionally we can manually specify a partition for the message
+                // this defaults to -1 - which will use librdkafka's default partitioner (consistent random for keyed messages, random for unkeyed messages)
+                null,
+                // Message to send. Must be a buffer
+                Buffer.from(message),
+                // for keyed messages, we also specify the key - note that this field is optional
+                null,
+                // you can send a timestamp here. If your broker version supports it,
+                // it will get added. Otherwise, we default to 0
+                Date.now()
+            );
+            console.log(`Message sent: ${message}`);
+        } catch (err) {
+            console.error("A problem occurred when sending our message");
+            console.error(err);
+        }
 
-            ],
-        })
-    }).on('close', async () => {
-        await producer.disconnect();
-    })
+        await sleep(1000);
+    }
 
+    producer.disconnect();
+};
 
-}
-
-init()
+produceMessagesOnSecondIntervals();
