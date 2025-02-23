@@ -1,3 +1,15 @@
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: '*',
+    },
+});
+
 const Kafka = require("node-rdkafka");
 
 const TOPIC_NAME = "energymeter";
@@ -13,46 +25,49 @@ const producer = new Kafka.Producer({
     "dr_cb": true
 });
 
-producer.connect();
 
-const sleep = async (timeInMs) =>
-    await new Promise((resolve) => setTimeout(resolve, timeInMs));
-
-const produceMessagesOnSecondIntervals = async () => {
-    // produce 100 messages on 1 second intervals
-    let i = 0;
-    while (i < 100) {
-        try {
-            if (!producer.isConnected()) {
-                await sleep(1000);
-                continue;
-            }
-
-            const message = `Hello from Node using SASL ${++i}!`;
-            producer.produce(
-                // Topic to send the message to
-                TOPIC_NAME,
-                // optionally we can manually specify a partition for the message
-                // this defaults to -1 - which will use librdkafka's default partitioner (consistent random for keyed messages, random for unkeyed messages)
-                null,
-                // Message to send. Must be a buffer
-                Buffer.from(message),
-                // for keyed messages, we also specify the key - note that this field is optional
-                null,
-                // you can send a timestamp here. If your broker version supports it,
-                // it will get added. Otherwise, we default to 0
-                Date.now()
-            );
-            console.log(`Message sent: ${message}`);
-        } catch (err) {
-            console.error("A problem occurred when sending our message");
-            console.error(err);
-        }
-
-        await sleep(1000);
+// Connect producer once at startup
+const initProducer = async () => {
+    try {
+        producer.connect();
+        console.log("Kafka Producer connected successfully");
+    } catch (error) {
+        console.error("Kafka Producer connection failed:", error);
     }
-
-    producer.disconnect();
 };
 
-produceMessagesOnSecondIntervals();
+io.on('connection', (socket) => {
+    console.log('New client connected');
+    socket.on('newdata', (data) => {
+        //producer logiv
+        const { userId, production, consumption, balance, time } = data;
+        sendMessage(userId, production, consumption, balance, time);
+    });
+    socket.on('disconnect', () => {
+        console.log('Client dissconnected');
+    });
+});
+
+// Function to send messages
+const sendMessage = (userId, production, consumption, balance, time) => {
+    const messageValue = JSON.stringify({ userId, production, consumption, balance, time });
+    try {
+        producer.produce(
+            TOPIC_NAME,
+            null, // Partition (null for auto-assign)
+            Buffer.from(messageValue),
+            userId // Key
+        );
+        console.log(`Message sent for user ${userId}and the messgae is ${messageValue}`);
+    } catch (error) {
+        console.error(`Error sending message for user ${userId}:`, error);
+    }
+};
+
+
+server.listen(8080, () => {
+    console.log('Server is running on port 8080');
+});
+
+initProducer();
+
