@@ -82,7 +82,7 @@ async function processUserData(userId) {
         time: new Date(),
     };
     console.log("Energy payload:", energyPayload);
-    const response = await axios.post('http://localhost:3000/api/products/addenergymetrics', energyPayload);
+    const response = await axios.post('https://energytrading.vercel.app/api/products/addenergymetrics', energyPayload);
     if (response?.data?.message) {
         // alert(response.data.message);
         //console.log(response.data)
