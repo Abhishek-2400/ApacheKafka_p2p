@@ -1,5 +1,4 @@
 const Kafka = require("node-rdkafka");
-const mongoose = require("mongoose");
 const axios = require("axios");
 
 const TOPIC_NAME = "energymeter";
