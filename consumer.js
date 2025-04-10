@@ -1,20 +1,18 @@
-const Kafka = require("node-rdkafka");
 const axios = require("axios");
+
+const Kafka = require("node-rdkafka");
 
 const TOPIC_NAME = "energymeter";
 const SASL_MECHANISM = "SCRAM-SHA-256";
 
-
-
-// Kafka Consumer Setup
 const stream = new Kafka.createReadStream(
     {
-        "metadata.broker.list": "kafka-3891f4e4-scalable-chat-app-redis-nextjs.k.aivencloud.com:22618",
+        "metadata.broker.list": "kafka-energyhive-shukla24abhi-059a.f.aivencloud.com:22198",
         "group.id": "GROUP_ID",
         "security.protocol": "sasl_ssl",
         "sasl.mechanism": SASL_MECHANISM,
         "sasl.username": "avnadmin",
-        "sasl.password": "AVNS_TF99GUGpRTJ5xvcjvCy",
+        "sasl.password": "AVNS_cdQZKsD-XEDTlQuvdao",
         "ssl.ca.location": "ca.pem",
     },
     { "auto.offset.reset": "beginning" },
