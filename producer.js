@@ -36,6 +36,8 @@ const initProducer = async () => {
     }
 };
 
+// we are connectign thee kafka producer to our websocket  bcz kafka was not directly integrating with our frontend part it was taking it as a backend component 
+// hence we used websockets to connect the kafka producer to our frontend part
 io.on('connection', (socket) => {
     console.log('New client connected');
     socket.on('newdata', (data) => {
