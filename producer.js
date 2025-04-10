@@ -11,6 +11,7 @@ const io = socketIo(server, {
 });
 
 
+
 const Kafka = require("node-rdkafka");
 
 const TOPIC_NAME = "energymeter";
